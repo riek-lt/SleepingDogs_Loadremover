@@ -199,7 +199,7 @@ startup
 			{"Snitch Cutscene", Location(Vec3(894.3939, -114.492, 23.10077), 0.2, "GLOBAL_MISSION_SNITCH")},
 			{"Loose Ends End", Location(Vec3(1420.719, -525.1333, 6.648087), 2, null)},
 			{"End of Election", Location(Vec3(-27.66542, 1444.057, 7.176795), 1, null)},
-			{"Ice Chipper Lee", Location(Vec3(-385.366, -530.5806, 0.5959374), 0.2, "MISSION_BIGSMILELEE_ICE_CHIPPER")} //End Split location
+			{"Ice Chipper Lee", Location(Vec3(-385.847, -531.2479, 0.5959), 1.25, "MISSION_BIGSMILELEE_ICE_CHIPPER")} //End Split location
 	};
 	
 	//Comparing float values is too precise, so we look at a range to allow for some leniency.
