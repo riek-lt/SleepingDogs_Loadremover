@@ -303,7 +303,7 @@ split
 	//Water Street Race has no objective string. Custom checks:
 	if (current.copXP > old.copXP
 		&& current.money == (old.money + 20000)
-		&& (vars.isNear(current.posX, 1445, 5) && vars.isNear(current.posY, -285, 5) && vars.isNear(current.posZ, 4.5, 3))
+		&& (vars.isNear(current.posX, 1445, 20) && vars.isNear(current.posY, -285, 20) && vars.isNear(current.posZ, 4.5, 8))
 		)
 	{
 		var Key = "LOCATION WATER_STREET_RACE";
