@@ -1,72 +1,60 @@
-// Load Remover created by riekelt
-// Improvements made by LeoKeidran
-// Significant guidance provided by Leemyy
+// Load Remover created by Plasma
+// Splitter made by LeoKeidran
+// Extra help from ahmeher
 
 state("SDHDShip")
 {
-	bool loading 		: 0x0207B000, 0x260;
-	string150 CurObj 	: 0x02431108, 0x1;
-	float health 		: 0x02087B78, 0x14;
-	float fixedHealth	: 0x2088654;
-	int faceXP 			: 0x02409CE0, 0x340;
-	int copXP 			: 0x02409CE0, 0x344;
-	int triadXP 		: 0x02409CE0, 0x348;
-	int copTrackingXP 	: 0x02409CE0, 0x538;
-	int triadTrackingXP : 0x02409CE0, 0x53C;
-	float groundX 		: 0x02409CE0, 0x6A8;
-	float groundY 		: 0x02409CE0, 0x6AC;
-	float groundZ 		: 0x02409CE0, 0x6B0; // height
-	float posX			: 0x021738A8, 0x220;
-	float posY			: 0x021738A8, 0x224; // height
-	float posZ			: 0x021738A8, 0x228;
-	int money			: 0x02409CE0, 0x3C4;
+	bool 	loading 			: 0x0207B000, 0x260;
+	float 	fixedHealth			: 0x2088654;
+
+	string150 CurObj 			: 0x02431108, 0x1;
+	string32 saveName			: 0x2409EE9;		 // Autosave name
+	bool	bslChipper			: 0x02072EE8, 0xF9C; // turns true when Big Smile Lee is chippered at the end of any%
+
+	float groundX 				: 0x02409CE0, 0x6A8; // Used for verifying the save being loaded.
+
+	bool 	autosaveIconVisible : 0x02401208, 0x20;
+	bool 	mainMenuSavesShown 	: 0x23F20B8;
+	bool 	onMainMenu         	: 0x242E580;
+	bool 	chosePopupOption 	: 0x0249F468, 0x1E8, 0x0, 0xC0, 0x80C;
+	bool 	popupPrompt  		: 0x2431090;
 }
-state("HKShip")
+state("HKShip") // Addresses provided by ahmeher
 {
-	bool loading: 0x000620E0, 0x418;
+	bool loading				: 0x000620E0, 0x418;
+	float fixedHealth      		: 0x1007314;
+
+	string150 CurObj   			: 0x10F47E4, 0x1;
+	string32 saveName 			: 0x10A12B9;
+	bool bslChipper			 	: 0x00FF3EA4, 0xA8;
+
+	bool autosaveIconVisible  	: 0x0109B908, 0x10;
+	bool mainMenuSavesShown		: 0x00AB2C3C, 0x1B8, 0xFCC;
+	bool onMainMenu        		: 0x1091B30;
+	bool chosePopupOption   	: 0x011124A8, 0x38, 0x2C, 0x8, 0x28C;
+	bool popupPrompt   			: 0x107A28C;
 }
 
 update
 {
-	vars.oldLocation = vars.currentLocation;
-	vars.currentLocation = vars.locationOf(current);
-	
-	var rememberCutsceneForSeconds = 1;
-	
-	var wasInCutscene = vars.inCutscene;
-	vars.inCutscene = current.fixedHealth == 1000;
-	
-	//For Debugging
-	var deltaTime = 1 / refreshRate;
-	if (vars.inCutscene != wasInCutscene)
+	// On first boot, health in fixed memory is -1.
+	vars.justBooted = (current.fixedHealth == -1) ? true : false;
+
+	//sets firstSplit up to be used in preventing double splits or first split not breaking
+	if (settings["anyStart"])
 	{
-		vars.inCutsceneSince = 0f;
+		vars.firstSplit = "WELCOME_TO_HONG_KONG";
+
 	}
-	vars.inCutsceneSince += vars.inCutscene ? deltaTime : -deltaTime;
-	vars.wasInCutscene = vars.inCutsceneSince > -rememberCutsceneForSeconds;
-	vars.wasInGameplay = vars.inCutsceneSince < rememberCutsceneForSeconds;
-	
-	//For "Nowhere" location check
-	vars.isNowhere = vars.playerAt(current, "Nowhere", 0);
-	vars.wasNowhere = vars.playerAt(old, "Nowhere", 0);
-	
-	//For Debugging
-	if(vars.wasInCutscene && !vars.inCutscene
-		&& current.groundX == old.groundX
-		&& current.groundY == old.groundY
-		&& current.groundZ == old.groundZ)
+	else if (settings["weddingStart"])
 	{
-		vars.cutsceneEndX = current.groundX;
-		vars.cutsceneEndY = current.groundY;
-		vars.cutsceneEndZ = current.groundZ;
+		vars.firstSplit = "GOING_UNDER";
 	}
-	if(vars.wasInGameplay && vars.inCutscene)
-	{
-		vars.cutsceneStartX = old.groundX;
-		vars.cutsceneStartY = old.groundY;
-		vars.cutsceneStartZ = old.groundZ;
-	}
-	
+
+	//sets weddingSlot to true if player is located at coordinates that match wedding slot. Else, false.
+	vars.weddingSlot = (893 <= current.groundX && current.groundX <= 895) ? true : false;
+
+
 }
 
 isLoading
@@ -78,29 +66,15 @@ startup
 { 
 	//Setup variables for use
 	vars.doneSplits = new HashSet<string>();
-	
-	vars.inCutscene = false;
-	vars.wasInCutscene = false;
-	vars.wasInGameplay = false;
-	vars.inCutsceneSince = 0f;
-	
-	vars.isNowhere = false;
-	vars.wasNowhere = false;
-	
-	vars.currentLocation = "unknown";
-	vars.oldLocation = "unknown";
-	
-	
+	vars.justBooted = false;
+
+	vars.firstSplit = "";
+	vars.weddingSlot = false;
+
 	//Debugging usage
-	vars.cutsceneEndX = 0f;
-	vars.cutsceneEndY = 0f;
-	vars.cutsceneEndZ = 0f;
-	vars.cutsceneStartX = 0f;
-	vars.cutsceneStartY = 0f;
-	vars.cutsceneStartZ = 0f;
-	vars.splitInCutscene = false;
-	vars.splitWasInCutscene = false;
 	vars.lastSplit = "";
+	vars.oldSplit = "";
+	vars.olderSplit = "";
 	
 	//Setting for Any% or Wedding% Start
 	
@@ -111,226 +85,129 @@ startup
 	settings.Add("splits", true, "Splits");
 	
 	vars.missionsList = new Dictionary<string,string> 
-	{ 	
-		{"LOCATION End of Intro Chase","Intro Chase"},
-		{"LOCATION End of Intro Fights","Intro Fights"},
-		{"XP MISSION_VENDOREXTORTION_RETURN_WITH_MONEY","Vendor Extortion (End)"},
-		{"XP MISSION_VENDOREXTORTION_FINISH_DELIVERY","Susan's Lunch (End)"},
-		{"XP MISSION_NIGHTMARKETCHASE_OBJECTIVE_012","Night Market Chase (End)"},
-		{"XP MISSION_STICKUP_OBJECTIVE_007","Stick Up and Delivery (End)"},
-		{"XP MISSION_MINIBUS_OBJECTIVE_010","Mini Bus Racket (End)"},
-		{"XP CASE_POPSTAR_TALKTO_DIRTYMING","Identified Supplier (End)"}, //new
-		{"XP CASE_PS_CALL_TENG","Lok Fu Park Drug Bust (End)"}, //new
-		{"LOCATION End of Amanda","Amanda (End)"},
-		{"XP MISSION_BAMBAMBCLUB_OBJECTIVE_016","Club Bam Bam (End)"},
-		{"XP CASE_PS3_PARK_SUPPLIER_CAR","Popstar (End)"},
-		{"LOCATION Snitch Cutscene","Go to the Restaurant"},
-		{"LOCATION Induction","Induction (End)"},
-		{"XP MISSION_PB_LEAVE_AREA","Listening In (End)"},
-		{"XP MISSION_TIFFANYSGUN_OBJECTIVE_016","Chain of Evidence (End)"},
-		{"XP MISSION_SWEATSHOP_OBJECTIVE_011","Payback (End)"},
-		{"XP CASE_HS2_PARK_VAN","Gathered Surveillance (End)"},
-		{"XP MISSION_UNCLEPO_OBJECTIVE_PARK_VEHICLE","Uncle Po (End)"},
-		{"XP MISSION_BRIDETOBE_OBJECTIVE_012","Bride to Be (End)"},
-		{"LOCATION WATER_STREET_RACE","Water Street Race (End)"}, //Edgecase situation
-		{"XP MISSION_WEDDING_OBJECTIVE_013","The Wedding (End)"},
-		{"XP CASE_HS4_ESCAPE_COPS","Hotshot Race (End)"},
-		{"XP MISSION_MRSCHUSREVENGE_OBJECTIVE_007","Mrs. Chu's Revenge (End)"},
-		{"XP MISSION_THENEWBOSS_OBJECTIVE_010","Meet the New Boss (End)"},
-		{"LOCATION Loose Ends","Loose Ends (End)"}, //MISSION_TOPGLAMOUR_OBJECTIVE_012 is after a phone call. New check needed
-		{"XP MISSION_FINALKILL_OBJECTIVE_017","Final Kill (End)"},
-		{"XP MISSION_INITIATION_OBJECTIVE_10","Initiation (End)"},
-		{"XP MISSION_JACKIEARRESTED_OBJECTIVE_012","Dockyard Heist (End)"},
-		{"XP MISSION_BOSSESMEET_OBJECTIVE_017","Intensive Care (End)"},
-		{"XP MISSION_IMPORTANTVISITOR_OBJECTIVE_016","Important Visitor (End)"},
-		{"XP MISSION_FASTGIRLS_OBJECTIVE_009","Fast Girls (End)"},
-		{"XP MISSION_BADLUCK_OBJECTIVE_016","Bad Luck (End)"},
-		{"XP MISSION_THEBIGHIT_OBJECTIVE_021","Conflicting Loyalties (End)"},
-		{"XP MISSION_FUNERAL_OBJECTIVE_018","The Funeral (End)"},
-		{"XP MISSION_CIVILDISCORD_OBJECTIVE_013","Civil Discord (End)"},
-		{"XP MISSION_BURIEDALIVE_OBJECTIVE_013","Buried Alive (End)"},
-		{"LOCATION End of Election","The Election (End)"},
-		{"LOCATION Ice Chipper Lee", "End Split"}
+	{
+		{"WELCOME_TO_HONG_KONG","Intro Chase"},
+		{"GOING_UNDER","Intro Fights"},
+		{"VENDOR_EXTORTION","Vendor Extortion (End)"},
+		{"VENDOR_FAVOR","Susan's Lunch (End)"},
+		{"NIGHT_MARKET_CHASE","Night Market Chase (End)"},
+		{"STICK_UPANDDELIVERY","Stick Up and Delivery (End)"},
+		{"MINI_BUS","Mini Bus Racket (End)"},
+		{"POPSTAR_1","Identified Supplier (End)"},
+		{"POPSTAR_2","Lok Fu Park Drug Bust (End)"},
+		{"AMANDA","Amanda (End)"},
+		{"BAM_BAM_CLUB","Club Bam Bam (End)"},
+		{"POPSTAR_3","Popstar (End)"}, //No Snitch autosave, instead game uses "Popstar_3" (meaning if you load this, you have to go to the snitch cutscene)
+		{"RACE_CASE_START","Induction (End)"},
+		{"PENDREWS_BUGS","Listening In (End)"},
+		{"TIFFANYS_GUN","Chain of Evidence (End)"},
+		{"SWEATSHOP","Payback (End)"},
+		{"HOTSHOT_LEAD_2","Gathered Surveillance (End)"},
+		{"UNCLE_PO","Uncle Po (End)"},
+		{"BRIDE_TO_BE","Bride to Be (End)"},
+		{"RACE_HOTSHOT_LEAD_3","Water Street Race (End)"},
+		{"WEDDING","The Wedding (End)"},
+		{"HOTSHOT_LEAD_4","Hotshot Race (End)"},
+		{"MRS_CHUS_REVENGE","Mrs Chu's Revenge (End)"},
+		{"THE_NEW_BOSS","Meet the New Boss (End)"},
+		{"TOP_GLAMOUR_AMBUSH","Loose Ends (End)"},
+		{"FINAL_KILL","Final Kill (End)"},
+		{"INITIATION","Initiation (End)"},
+		{"JACKIE_ARRESTED","Dockyard Heist (End)"},
+		{"HOSPITAL_SHOOTOUT","Intensive Care (End)"},
+		{"IMPORTANT_VISITOR","Important Visitor (End)"},
+		{"FAST_GIRLS","Fast Girls (End)"},
+		{"BAD_LUCK","Bad Luck"},
+		{"THE_BIG_HIT","Conflicting Loyalties (End)"},
+		{"THE_FUNERAL","The Funeral (End)"},
+		{"CIVIL_DISCORD","Civil Discord (End)"},
+		{"BURIED_ALIVE","Buried Alive (End)"},
+		{"THE_ELECTION","The Election (End)"},
+		{"BIG_SMILE_LEE","Big Smile Lee (End)"} // End split does not utilise auto save
 	};
 	
 	// Automatically takes all above to create toggleable settings.
 	foreach (var Tag in vars.missionsList)
 	{
 		//Enables mission end splits and Locations.
-		if (Tag.Key.Contains("XP") || Tag.Key.Contains("LOCATION") && !Tag.Key.Contains("Snitch")) {
-			settings.Add(Tag.Key, true, Tag.Value, "splits");
+		if (Tag.Key.Contains("Snitch")) {
+			settings.Add(Tag.Key, false, Tag.Value, "splits");
 		}
 		else
 		{
-		settings.Add(Tag.Key, false, Tag.Value, "splits");
+		settings.Add(Tag.Key, true, Tag.Value, "splits");
 		}
 	}
-			
-	
-	//Utility function to make lookup more readable
-	//Name "vec3" refers to the X Y Z values of coordinates in game
-	Func<double, double, double, Tuple<float, float, float>> Vec3 = (double x, double y, double z) =>
-		 new Tuple<float, float, float>((float)x, (float)y, (float)z);
-	
-	//Utility function to make lookup more readable
-	//Name "Location" refers to Vec3 above + detection range + optional mission string
-	Func<
-		Tuple<float, float, float>,
-		double,
-		string,
-		Tuple<Tuple<float, float, float>,
-			float,
-			string>>
-		Location = (Tuple<float, float, float> position, double range, string objective) =>
-		 new Tuple<Tuple<float, float, float>, float, string>(position, (float)range, objective);
-	
-	//Lookup creation of locations and their coordinates
-	var locations =
-		new Dictionary<string, Tuple<Tuple<float, float, float>, float, string>>(StringComparer.OrdinalIgnoreCase) {
-			
-			//Name, Location((Vec3(X, Y, Z), Range, Objective string)
-			{"Nowhere", Location(Vec3(0, 0, 0), 0, null)},
-			{"Tutorial", Location(Vec3(-1854.349, -1641.585, 0.210), 5, null)},
-			{"End of Intro Chase", Location(Vec3(1062.252, -43.00966, 14.83472), 1, null)},
-			{"Wedding% Start", Location(Vec3(1059.478, -39.73544, 14.83472), 0.2, null)},
-			{"End of Intro Fights", Location(Vec3(935.7, -221.1838, 16.0005), 0.3, null)},
-			{"End of Amanda", Location(Vec3(885.9518, -468.5711, 15.56128), 1, "MISSION_AMANDA_OBJECTIVE_DEFEAT_STUDENTS")},
-			{"Induction End", Location(Vec3(1581.927, 454.7356, 0.1100691), 0.2, null)},
-			{"Snitch Cutscene", Location(Vec3(894.3939, -114.492, 23.10077), 0.2, "GLOBAL_MISSION_SNITCH")},
-			{"Loose Ends End", Location(Vec3(1420.719, -525.1333, 6.648087), 2, null)},
-			{"End of Election", Location(Vec3(-27.66542, 1444.057, 7.176795), 1, null)},
-			{"Ice Chipper Lee", Location(Vec3(-385.847, -531.2479, 0.5959), 1.25, "MISSION_BIGSMILELEE_ICE_CHIPPER")} //End Split location
-	};
-	
-	//Comparing float values is too precise, so we look at a range to allow for some leniency.
-	Func<float, double, double, bool> isNear =
-		(float value, double comparand, double epsilon) => {
-			var delta = value - comparand;
-			return -epsilon <= delta && delta <= +epsilon;
-	};
-	vars.isNear = isNear;
-	
-	//Function to determine whether the player's ground coordinates are at a location.
-	Func<dynamic, string, double, bool> playerAt = (dynamic state, string locationName, double range) => {
-		var checkLocation = locations[locationName];
-		var position = checkLocation.Item1;
-		return isNear(state.groundX, position.Item1, range)
-			&& isNear(state.groundY, position.Item2, range)
-			&& isNear(state.groundZ, position.Item3, range);
-	};
-	vars.playerAt = playerAt;
-	
-	Func<dynamic, string> locationOf = (dynamic state) => {
-		foreach(var entry in locations) {
-			var position = entry.Value.Item1;
-			var range = entry.Value.Item2;
-			var objective = entry.Value.Item3;
-			if(isNear(state.groundX, position.Item1, range)
-				&& isNear(state.groundY, position.Item2, range)
-				&& isNear(state.groundZ, position.Item3, range)
-				&& (objective == null || objective == state.CurObj))
-			{
-				return entry.Key;
-			}
-		}
-		return "unknown";
-	};
-	
-	vars.locationOf = locationOf;
+
 
 }
 
 start
 {
-	if (settings["anyStart"]){
-		return (vars.wasInCutscene
-			&& vars.currentLocation == "Tutorial"
-			&& vars.wasNowhere
-			&& settings["anyStart"]
-		);
-	}
-	else
+	// Checks if any% start is selected -- can still start if runner hits No on prompt... not sure how to fix.
+	if (settings["anyStart"])
 	{
-		return (vars.currentLocation == "Wedding% Start"
+		return ((current.onMainMenu || vars.justBooted) // checks if either on menu or just booted.
+			&& current.mainMenuSavesShown
+			&& old.mainMenuSavesShown
+			&& current.popupPrompt
+			&& current.chosePopupOption
+		);
+	} //checks if wedding start is selected -- will split on *any* save load, need to apply fix.
+	else if (settings["weddingStart"])
+	{
+		return(current.loading
+			&& current.mainMenuSavesShown	//main menu only. May need to review for loading the save from pause menu instead
+			&& old.mainMenuSavesShown
+			&& current.popupPrompt
+			&& vars.weddingSlot
 		);
 	}
+	vars.oldSplit = "";
+	vars.olderSplit = "";
+	vars.lastSplit = "";
 }
 
 split
 {
-	//Split if at location (used typically for cutscene start/end)
-	if (vars.currentLocation != "unknown")
+	//Final Split check
+	if ((current.bslChipper) && (current.CurObj == "MISSION_BIGSMILELEE_ICE_CHIPPER"))
 	{
-		var Key = "LOCATION " + vars.currentLocation;
+		var Key = "BIG_SMILE_LEE";
+		if (!vars.doneSplits.Contains(Key))
+		{
+			vars.doneSplits.Add(Key);
 
-		if (!vars.doneSplits.Contains(Key))
-		{
-			vars.doneSplits.Add(Key);
-			vars.lastSplit = Key;
-			//If the setting is enabled, will return true and cause a split.
-			return (settings[Key]);
-		}
-	}
-	
-	//First race, Induction, objective string is inconsistent. Custom checks:
-	if (current.money == (old.money + 1200) && vars.currentLocation == "Induction End")
-	{
-		var Key = "LOCATION Induction";
-		if (!vars.doneSplits.Contains(Key))
-		{
-			vars.doneSplits.Add(Key);
+
+
 			vars.lastSplit = Key;
 			
 			return (settings[Key]);
 		}
 	}
-	
-	//Loose Ends, objective string is inconsistent. Custom checks:
-	if (current.money == (old.money + 60000) && vars.currentLocation == "Loose Ends End")
-	{
 		
-		var Key = "LOCATION Loose Ends";
-		if (!vars.doneSplits.Contains(Key))
-		{
-			vars.doneSplits.Add(Key);
-			vars.lastSplit = Key;
-			
-			return (settings[Key]);
-		}
-		
-	}
-	
-	//Water Street Race has no objective string. Custom checks:
-	if (current.copXP > old.copXP
-		&& current.money == (old.money + 20000)
-		&& (vars.isNear(current.posX, 1445, 20) && vars.isNear(current.posY, -285, 20) && vars.isNear(current.posZ, 4.5, 8))
-		)
+	//General splits at the end of mission
+	if ((current.autosaveIconVisible == true) && ((current.saveName != old.saveName) || (current.saveName == vars.firstSplit)))
+		//checks if autosave icon is present to split. Additional checks added to prevent double splits after resets, and to guarantee first split works if you reset early.
 	{
-		var Key = "LOCATION WATER_STREET_RACE";
+		var Key = current.saveName;
 		if (!vars.doneSplits.Contains(Key))
 		{
 			vars.doneSplits.Add(Key);
+
+			//debug of splits
+			vars.olderSplit = vars.oldSplit;
+			vars.oldSplit = vars.lastSplit;
+
+
 			vars.lastSplit = Key;
 			
 			return (settings[Key]);
 		}
 	}
-	
-	//Checks if you have gained XP to split, which happens at the end of a mission
-	if (current.faceXP > old.faceXP || current.copXP > old.copXP || current.triadXP > old.triadXP || current.money > (old.money + 200))
-	{
-		var Key = "XP " + current.CurObj;
-		if (!vars.doneSplits.Contains(Key))
-		{
-			vars.doneSplits.Add(Key);
-			vars.lastSplit = Key;
-			
-			return (settings[Key]);
-		}
-	}
-	
 }
 
-onReset{
+onReset
+{
 	vars.doneSplits.Clear();
 }
