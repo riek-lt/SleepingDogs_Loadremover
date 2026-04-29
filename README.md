@@ -9,16 +9,16 @@ Auto Splitter & Load Remover for Sleeping Dogs Definitive Edition
 * make sure the game name is set to "Sleeping Dogs"
 * above your splits, an "Activate" button will appear, which you need to click
 * click "Settings" to toggle which splits are active, as well as which start you want to use (Any% or Wedding%)
-* if you are running any% on DE be sure to add a 1m52s offset (in the "Start Timer at:" field) to match the existing timing methods.
 * done!
 
 ## Credits
 
 Riekelt & Plasma for initial load removal creation. <br>
 LeoKeidran for Auto Splitter development. <br>
-Leemyy for guidance and assistance.
+Leemyy for guidance and assistance. <br>
+ahmeher for extra help, especially with the OG version.
 
 ## Game Links
 *Leaderboards: [speedrun.com/sleeping_dogs](https://speedrun.com/sleeping_dogs)*  ​  
 ​
-### Contact LeoKeidran on Discord if there are issues!
+### Raise an issue, or contact LeoKeidran on Discord if there are issues!
