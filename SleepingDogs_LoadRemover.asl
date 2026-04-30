@@ -52,7 +52,7 @@ update
 	}
 
 	//sets weddingSlot to true if player is located at coordinates that match wedding slot. Else, false.
-	vars.weddingSlot = (893 <= current.groundX && current.groundX <= 895) ? true : false;
+	vars.weddingSlot = ((893 <= current.groundX && current.groundX <= 895) || (1058 <= current.groundX && current.groundX <= 1060)) ? true : false;
 
 
 }
