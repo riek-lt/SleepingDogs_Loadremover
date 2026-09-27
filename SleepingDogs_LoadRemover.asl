@@ -54,7 +54,7 @@ update
 	int groundXRounded = (int)Math.Floor(current.groundX);
 
 	//sets weddingSlot to true if player is located at coordinates that match wedding slot. Else, false.
-	vars.weddingSlot = ((groundXRounded == 894) || (groundXRounded == 1059) || (groundXRounded == 1062)) ? true : false;
+	vars.weddingSlot = ((groundXRounded == 894) || (groundXRounded == 1059) || (groundXRounded == 1062) || groundXRounded == 1073) ? true : false;
 
 
 }
