@@ -56,6 +56,16 @@ update
 	//sets weddingSlot to true if player is located at coordinates that match wedding slot. Else, false.
 	vars.weddingSlot = ((groundXRounded == 894) || (groundXRounded == 1059) || (groundXRounded == 1062) || groundXRounded == 1073) ? true : false;
 
+	// Incremental cycle used for any% start to prevent false starts by selecting No.
+	var rememberFor = 0.200; //number of seconds the value should be held
+	var deltaTime = 1 / refreshRate;
+
+	if (current.chosePopupOption != old.chosePopupOption)
+	{
+		vars.popupPromptSince = 0f;
+	}
+	vars.popupPromptSince += current.chosePopupOption ? deltaTime : 0;
+	vars.confirmedStart = (vars.popupPromptSince > rememberFor) && (vars.popupPromptSince < 0.5);
 
 }
 
@@ -65,7 +75,7 @@ isLoading
 }
 
 startup
-{ 
+{
 	//Setup variables for use
 	vars.doneSplits = new HashSet<string>();
 	vars.justBooted = false;
@@ -73,20 +83,23 @@ startup
 	vars.firstSplit = "";
 	vars.weddingSlot = false;
 
+	vars.popupPromptSince = 0f;
+	vars.confirmedStart = false;
+
 	//Debugging usage
 	vars.lastSplit = "";
 	vars.oldSplit = "";
 	vars.olderSplit = "";
-	
+
 	//Setting for Any% or Wedding% Start
-	
+
 	settings.Add("anyStart", true, "Any% Start");
 	settings.Add("weddingStart", false, "Wedding% Start");
-	
+
 	// Creates list of splits, left side is variable/internal name. Right is display name.
 	settings.Add("splits", true, "Splits");
-	
-	vars.missionsList = new Dictionary<string,string> 
+
+	vars.missionsList = new Dictionary<string,string>
 	{
 		{"WELCOME_TO_HONG_KONG","Intro Chase"},
 		{"GOING_UNDER","Intro Fights"},
@@ -127,7 +140,7 @@ startup
 		{"THE_ELECTION","The Election (End)"},
 		{"BIG_SMILE_LEE","Big Smile Lee (End)"} // End split does not utilise auto save
 	};
-	
+
 	// Automatically takes all above to create toggleable settings.
 	foreach (var Tag in vars.missionsList)
 	{
@@ -137,7 +150,7 @@ startup
 		}
 		else
 		{
-		settings.Add(Tag.Key, true, Tag.Value, "splits");
+			settings.Add(Tag.Key, true, Tag.Value, "splits");
 		}
 	}
 
@@ -146,23 +159,24 @@ startup
 
 start
 {
-	// Checks if any% start is selected -- can still start if runner hits No on prompt... not sure how to fix.
+	// Checks if any% start is selected
 	if (settings["anyStart"])
 	{
 		return ((current.onMainMenu || vars.justBooted) // checks if either on menu or just booted.
-			&& current.mainMenuSavesShown
-			&& old.mainMenuSavesShown
-			&& current.popupPrompt
-			&& current.chosePopupOption
+		&& current.mainMenuSavesShown
+		&& old.mainMenuSavesShown
+		&& current.popupPrompt
+		&& current.chosePopupOption
+		&& vars.confirmedStart
 		);
 	} //checks if wedding start is selected -- will split on *any* save load, need to apply fix.
 	else if (settings["weddingStart"])
 	{
 		return(current.loading
-			&& current.mainMenuSavesShown	//main menu only. May need to review for loading the save from pause menu instead
-			&& old.mainMenuSavesShown
-			&& current.popupPrompt
-			&& vars.weddingSlot
+		&& current.mainMenuSavesShown	//main menu only. May need to review for loading the save from pause menu instead
+		&& old.mainMenuSavesShown
+		&& current.popupPrompt
+		&& vars.weddingSlot
 		);
 	}
 	vars.oldSplit = "";
@@ -183,11 +197,11 @@ split
 
 
 			vars.lastSplit = Key;
-			
+
 			return (settings[Key]);
 		}
 	}
-		
+
 	//General splits at the end of mission
 	if ((current.autosaveIconVisible == true) && ((current.saveName != old.saveName) || (current.saveName == vars.firstSplit)))
 		//checks if autosave icon is present to split. Additional checks added to prevent double splits after resets, and to guarantee first split works if you reset early.
@@ -203,7 +217,7 @@ split
 
 
 			vars.lastSplit = Key;
-			
+
 			return (settings[Key]);
 		}
 	}
